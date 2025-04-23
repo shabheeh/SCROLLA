@@ -1,6 +1,11 @@
+import { useState } from "react";
+import SignUpModal from "./auth/AuthModal";
 import { Button } from "./ui/button";
 
 export const Navbar = () => {
+  const [isSignupModalOpen, setSignupModalOpen] = useState<boolean>(false);
+  const closeSignupModal = () => setSignupModalOpen(false)
+
   return (
     <div className="border-b-1">
       <header className="h-16 flex items-center justify-between mx-5 sm:mx-30">
@@ -11,11 +16,16 @@ export const Navbar = () => {
           <Button className="text-sm bg-secondary border-primary text-primary py-2 px-4 cursor-pointer rounded-3xl">
             Sign in
           </Button>
-          <Button className="text-sm bg-black dark:bg-bg-primary cursor-pointer hover:bg-black text-white py-2 px-4 rounded-3xl">
+          <Button
+            onClick={() => setSignupModalOpen(true)}
+            className="text-sm bg-black dark:bg-bg-primary cursor-pointer hover:bg-black text-white py-2 px-4 rounded-3xl"
+          >
             Get Started
           </Button>
         </div>
       </header>
+
+      <SignUpModal isOpen={isSignupModalOpen} onClose={closeSignupModal} />
     </div>
   );
 };

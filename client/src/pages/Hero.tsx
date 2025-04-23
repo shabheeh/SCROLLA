@@ -2,6 +2,8 @@ import { Navbar } from "../components/Navbar";
 import heropageImg from "../assets/Untitled design (2).png";
 
 export const Hero = () => {
+
+
   return (
     <div className="flex flex-col w-full h-screen overflow-hidden">
       {/* Navbar */}
