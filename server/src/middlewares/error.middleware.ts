@@ -3,8 +3,9 @@ import CustomError from "../utils/error";
 
 const errorHandler = (
   err: Error | CustomError,
-  req: Request,
+  _req: Request,
   res: Response,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   next: NextFunction
 ) => {
   console.error("Error:", err.message);

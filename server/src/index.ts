@@ -2,11 +2,12 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import morgan from "morgan";
-import sessionConfig from "./configs/session.config";
 import dotenv from "dotenv";
-import connectDB from "./configs/db";
-
 dotenv.config();
+import sessionConfig from "./configs/session.config";
+import connectDB from "./configs/db";
+import userRouter from "./routes/user.router";
+import errorHandler from "./middlewares/error.middleware";
 
 const corsOptions = {
   origin: process.env.CORS_ORIGIN,
@@ -25,6 +26,18 @@ app.use(sessionConfig);
 app.use(cookieParser());
 
 connectDB();
+
+app.use("/", userRouter);
+
+app.use(errorHandler);
+
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("Unhandled Rejection at:", promise, "reason:", reason);
+});
+
+process.on("uncaughtException", (error) => {
+  console.error("Uncaught Exception thrown:", error);
+});
 
 const port = process.env.PORT || 4000;
 

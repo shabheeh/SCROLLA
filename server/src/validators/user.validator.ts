@@ -5,13 +5,14 @@ export const validateUserSignup = celebrate({
     email: Joi.string().email().required(),
     firstName: Joi.string().min(2).required(),
     lastName: Joi.string().min(2).required(),
-    password: Joi.string().required(),
+    password: Joi.string()
+      .min(8)
+      .pattern(/(?=.*[0-9])(?=.*[!@#$%^&*])/)
+      .required(),
     phone: Joi.string()
       .pattern(/^\+?[1-9]\d{1,14}$/)
       .required(),
-    dob: Joi.string()
-      .pattern(/^\d{4}-\d{2}-\d{2}$/)
-      .required(),
+    dob: Joi.date().iso().less("now").required(),
     preferences: Joi.alternatives()
       .try(Joi.array().items(Joi.string()).min(1), Joi.string())
       .custom((value) =>

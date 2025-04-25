@@ -1,8 +1,8 @@
-export interface User {
-    firstname: string;
+export interface IUser {
+    firstName: string;
     lastName: string;
     phone: string;
     email: string;
-    dob: string;
+    dob: Date;
     preferences: string[];
 }

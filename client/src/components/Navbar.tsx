@@ -1,10 +1,13 @@
 import { useState } from "react";
-import SignUpModal from "./auth/AuthModal";
+import AuthModal from "./auth/AuthModal";
 import { Button } from "./ui/button";
 
 export const Navbar = () => {
-  const [isSignupModalOpen, setSignupModalOpen] = useState<boolean>(false);
-  const closeSignupModal = () => setSignupModalOpen(false)
+  const [isAuthModalOpen, setAuthModalOpen] = useState<boolean>(false);
+  const closeSignupModal = () => setAuthModalOpen(false);
+  const [defaultTab, setDefaultTab] = useState<"sign-in" | "sign-up">(
+    "sign-in"
+  );
 
   return (
     <div className="border-b-1">
@@ -13,11 +16,21 @@ export const Navbar = () => {
           <h1 className="text-lg font-bold">SCROLLA</h1>
         </div>
         <div className="flex-none flex gap-x-2">
-          <Button className="text-sm bg-secondary border-primary text-primary py-2 px-4 cursor-pointer rounded-3xl">
+          <Button
+            onClick={() => {
+              setDefaultTab("sign-in");
+
+              setAuthModalOpen(true);
+            }}
+            className="text-sm bg-secondary border-primary text-primary py-2 px-4 cursor-pointer rounded-3xl"
+          >
             Sign in
           </Button>
           <Button
-            onClick={() => setSignupModalOpen(true)}
+            onClick={() => {
+              setDefaultTab("sign-up");
+              setAuthModalOpen(true);
+            }}
             className="text-sm bg-black dark:bg-bg-primary cursor-pointer hover:bg-black text-white py-2 px-4 rounded-3xl"
           >
             Get Started
@@ -25,7 +38,11 @@ export const Navbar = () => {
         </div>
       </header>
 
-      <SignUpModal isOpen={isSignupModalOpen} onClose={closeSignupModal} />
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={closeSignupModal}
+        defaultTab={defaultTab}
+      />
     </div>
   );
 };

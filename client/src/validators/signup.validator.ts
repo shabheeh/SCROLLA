@@ -42,13 +42,13 @@ export const signUpFormSchema = z
     path: ["confirmPassword"],
   });
 
-// Define the sign-in form schema with Zod
 export const signInFormSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
+  email: z
+    .string()
+    .email("Please enter a valid email address")
+    .min(1, "Email is required"),
   password: z.string().min(1, "Password is required"),
-  rememberMe: z.boolean().optional(),
 });
 
-// Extract the types from the schemas
 export type SignUpFormValues = z.infer<typeof signUpFormSchema>;
 export type SignInFormValues = z.infer<typeof signInFormSchema>;

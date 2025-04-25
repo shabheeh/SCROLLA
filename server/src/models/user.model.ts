@@ -19,7 +19,7 @@ const userSchema = new Schema<IUser>({
   },
   phone: {
     type: String,
-    required: true
+    required: true,
   },
   dob: {
     type: Date,
@@ -27,8 +27,8 @@ const userSchema = new Schema<IUser>({
   },
   preferences: {
     type: [String],
-    required: true
-  }
+    required: true,
+  },
 });
 
-export const userModel = model<IUser>("User", userSchema)
+export const userModel = model<IUser>("User", userSchema);
