@@ -356,30 +356,7 @@ const ScrollaArticlePage = () => {
           </div>
           
           <Separator className="mb-8" />
-          
-          {/* Author bio */}
-          <div className="bg-muted/30 p-6 rounded-lg mb-8">
-            <div className="flex items-center gap-4 mb-4">
-              <Avatar className="h-16 w-16">
-                <img src={article.authorAvatar} alt={article.author} />
-              </Avatar>
-              <div>
-                <h3 className="text-lg font-bold">{article.author}</h3>
-                <p className="text-sm text-muted-foreground">{article.authorFollowers} followers</p>
-              </div>
-              <Button variant="outline" className="ml-auto rounded-full">
-                Follow
-              </Button>
-            </div>
-            <p className="mb-4">{article.authorBio}</p>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="rounded-full">React</Badge>
-              <Badge variant="outline" className="rounded-full">TypeScript</Badge>
-              <Badge variant="outline" className="rounded-full">UI/UX</Badge>
-            </div>
-          </div>
-          
-          {/* Comments section */}
+
           <div className="mb-8">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold">Comments ({article.comments})</h2>
@@ -440,7 +417,7 @@ const ScrollaArticlePage = () => {
         {/* Right sidebar */}
         <div className="md:col-span-4 space-y-8">
           {/* Author card - sticky */}
-          <div className="sticky top-24 bg-background p-6 rounded-lg border">
+          <div className="sticky top-32 bg-background p-6 rounded-lg border">
             <div className="flex items-center gap-4 mb-4">
               <Avatar className="h-16 w-16">
                 <img src={article.authorAvatar} alt={article.author} />
@@ -469,36 +446,6 @@ const ScrollaArticlePage = () => {
               </div>
             </div>
             <Button variant="link" className="px-0 mt-4">See all</Button>
-          </div>
-          
-          {/* Related articles */}
-          <div className="bg-background p-6 rounded-lg border">
-            <h2 className="font-bold text-xl mb-4">Related articles</h2>
-            <div className="space-y-6">
-              {relatedArticles.map((article, index) => (
-                <div key={article.id}>
-                  <div className="group cursor-pointer">
-                    <img 
-                      src={article.image} 
-                      alt={article.title}
-                      className="w-full h-32 object-cover rounded-md mb-2"
-                    />
-                    <h3 className="font-medium group-hover:text-primary">{article.title}</h3>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs">{article.author} in {article.publication}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span>{article.date}</span>
-                      <span>·</span>
-                      <span>{article.readTime}</span>
-                      <Badge variant="outline" className="rounded-full text-xs">{article.tag}</Badge>
-                    </div>
-                  </div>
-                  {index < relatedArticles.length - 1 && <Separator className="my-4" />}
-                </div>
-              ))}
-            </div>
-            <Button variant="link" className="px-0 mt-4">See more recommendations</Button>
           </div>
         </div>
       </main>
