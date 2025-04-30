@@ -1,4 +1,4 @@
-import { AuthProvider } from "./components/AuthProvider";
+import { AuthProvider } from "./components/auth/AuthProvider";
 import { ThemeProvider } from "./components/theme-provider";
 import { Toaster } from "sonner";
 import { AppRouter } from "./router/AppRouter";

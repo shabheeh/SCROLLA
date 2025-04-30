@@ -6,9 +6,11 @@ import { HttpStatusCode } from "../constants/httpStatusCodes";
 import {
   generateAccessToken,
   generateRefreshToken,
+  verifyAccessToken,
   verifyRefreshToken,
 } from "../utils/jwt";
 import { ResponseMessage } from "../constants/responseMessages";
+import { CustomRequest } from "src/middlewares/authMiddleware";
 
 export const userSignup = async (
   req: Request,
@@ -21,7 +23,10 @@ export const userSignup = async (
   const existingUser = await userModel.findOne({ email });
 
   if (existingUser) {
-    throw new CustomError("User with this email already exists", 400);
+    throw new CustomError(
+      "User with this email already exists",
+      HttpStatusCode.BAD_REQUEST
+    );
   }
 
   const password = userData.password;
@@ -41,21 +46,22 @@ export const userSigin = async (req: Request, res: Response): Promise<void> => {
   const user = await userModel.findOne({ email });
 
   if (!user) {
-    throw new CustomError("Invalid Credentials", 400);
+    throw new CustomError("Invalid Credentials", HttpStatusCode.BAD_REQUEST);
   }
 
   const isPasswordMatch = await bcrypt.compare(password, user.password);
 
   if (!isPasswordMatch) {
-    throw new CustomError("Invalid Credentials", 400);
+    throw new CustomError("Invalid Credentials", HttpStatusCode.BAD_REQUEST);
   }
 
-  const accessToken = generateAccessToken(user._id.toString());
-  const refreshToken = generateRefreshToken(user._id.toString());
+  const accessToken = generateAccessToken((user._id as string).toString());
+  const refreshToken = generateRefreshToken((user._id as string).toString());
 
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 
@@ -67,16 +73,25 @@ export const userSigin = async (req: Request, res: Response): Promise<void> => {
   });
 };
 
-export const getRefreshToken = (req: Request, res: Response) => {
+export const getRefreshToken = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   const refreshToken = req.cookies.refreshToken;
 
   if (!refreshToken) {
-    throw new CustomError("Refresh token not found", 401);
+    throw new CustomError(
+      "Refresh token not found",
+      HttpStatusCode.UNAUTHORIZED
+    );
   }
 
   const decoded = verifyRefreshToken(refreshToken);
   if (!decoded) {
-    throw new CustomError("Invalid or expired token", 401);
+    throw new CustomError(
+      "Invalid or expired token",
+      HttpStatusCode.UNAUTHORIZED
+    );
   }
 
   const newAccessToken = generateAccessToken(decoded.userId);
@@ -85,5 +100,103 @@ export const getRefreshToken = (req: Request, res: Response) => {
     success: true,
     message: ResponseMessage.SUCCESS.OPERATION_SUCCESSFUL,
     token: newAccessToken,
+  });
+};
+
+export const getUser = async (req: CustomRequest, res: Response) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    throw new CustomError("Unauthenticated", HttpStatusCode.UNAUTHORIZED);
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  if (!token) {
+    throw new CustomError("Token found Found", HttpStatusCode.NOT_FOUND);
+  }
+  const decoded = verifyAccessToken(token);
+
+  if (!decoded) {
+    throw new CustomError("Invalid or expired token", HttpStatusCode.FORBIDDEN);
+  }
+
+  req.userId = decoded.userId;
+
+  const user = await userModel.findById(req.userId).select("-password");
+
+  res.status(HttpStatusCode.OK).json({
+    success: true,
+    message: ResponseMessage.SUCCESS.OPERATION_SUCCESSFUL,
+    user,
+  });
+};
+
+export const userSignout = async (
+  _req: Request,
+  res: Response
+): Promise<void> => {
+  res.clearCookie("refreshToken");
+
+  res.status(HttpStatusCode.OK).json({
+    success: true,
+    message: ResponseMessage.SUCCESS.OPERATION_SUCCESSFUL,
+  });
+};
+
+export const updateProfile = async (
+  req: CustomRequest,
+  res: Response
+): Promise<void> => {
+  const userData = req.body;
+  const userId = req.userId;
+
+  const updatedUser = await userModel.findByIdAndUpdate(userId, userData, {
+    new: true,
+  });
+
+  res.status(HttpStatusCode.OK).json({
+    success: true,
+    message: ResponseMessage.SUCCESS.RESOURCE_UPDATED,
+    user: updatedUser,
+  });
+};
+
+export const changePassword = async (
+  req: CustomRequest,
+  res: Response
+): Promise<void> => {
+  const userId = req.userId;
+  const { currentPassword, newPassword } = req.body;
+
+  if (!currentPassword || !newPassword) {
+    throw new CustomError(
+      "Missing required fileds",
+      HttpStatusCode.BAD_REQUEST
+    );
+  }
+
+  const user = await userModel.findById(userId);
+
+  if (!user) {
+    throw new CustomError("User not found", 404);
+  }
+
+  const isPasswordMatch = await bcrypt.compare(currentPassword, user.password);
+
+  if (!isPasswordMatch) {
+    throw new CustomError(
+      "Incorrect current passwrod",
+      HttpStatusCode.BAD_REQUEST
+    );
+  }
+
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+  await userModel.findByIdAndUpdate(userId, { password: hashedPassword });
+
+  res.status(HttpStatusCode.OK).json({
+    success: true,
+    message: ResponseMessage.SUCCESS.OPERATION_SUCCESSFUL,
   });
 };

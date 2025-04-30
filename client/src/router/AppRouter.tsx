@@ -1,22 +1,25 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Hero } from "../pages/Hero";
-import { useAuth } from "../contexts/authContext";
-import Feed from "../pages/Feed";
-import ScrollaArticlePage from "../pages/ArticleView";
-import ScrollaWriteArticle from "../pages/AddArticle";
+import ArticleFeed from "../pages/ArticleFeed";
+import ArticleView from "../pages/ArticleView";
+import AddArticle from "../pages/AddArticle";
+import UserProfilePage from "../pages/Profile";
+import ProtectedRoute from "./ProtectedRoute";
 
 
 export const AppRouter = () => {
 
-    const user = useAuth()
 
-    return(
-        <Router>
-            <Routes>
-                <Route path="/" element={ user ? <Feed /> : <Hero />} />
-                <Route path="/view" element={<ScrollaArticlePage />} />
-                <Route path="/add" element={<ScrollaWriteArticle />}  />
-            </Routes>
-        </Router>
-    )
-}
+    return (
+      <Router>
+        <Routes>
+          <Route path="/" element={<Hero />} />
+          <Route path="/feed" element={<ProtectedRoute><ArticleFeed /></ProtectedRoute>} />
+          <Route path="/:article" element={<ProtectedRoute><ArticleView /></ProtectedRoute>} />
+          <Route path="/write" element={<ProtectedRoute><AddArticle /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><UserProfilePage /></ProtectedRoute>} />
+        </Routes>
+      </Router>
+    );
+  };
+  

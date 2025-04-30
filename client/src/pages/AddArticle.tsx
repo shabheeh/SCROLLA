@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, Image, X, Clock, Globe, Lock } from "lucide-react";
 import { Avatar } from "../components/ui/avatar";
 import { Button } from "../components/ui/button";
@@ -24,91 +24,24 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogClose,
 } from "../components/ui/dialog";
 import { Label } from "../components/ui/label";
 import { useNavigate } from "react-router-dom";
-
-const topicCategoryMap = {
-  Programming: [
-    "JavaScript",
-    "React",
-    "TypeScript",
-    "Node.js",
-    "Python",
-    "CSS",
-    "HTML",
-    "Data Science",
-  ],
-  Design: [
-    "UI/UX",
-    "Web Design",
-    "Graphic Design",
-    "Design Systems",
-    "Typography",
-    "Color Theory",
-  ],
-  Productivity: [
-    "Time Management",
-    "Personal Growth",
-    "Career",
-    "Work-Life Balance",
-    "Freelancing",
-  ],
-  Technology: [
-    "Artificial Intelligence",
-    "Machine Learning",
-    "Blockchain",
-    "Web3",
-    "Cloud Computing",
-    "Cybersecurity",
-  ],
-  Marketing: [
-    "Content Marketing",
-    "SEO",
-    "Social Media Marketing",
-    "Email Marketing",
-    "Brand Strategy",
-    "Growth Hacking",
-    "Affiliate Marketing",
-  ],
-  "Health & Wellness": [
-    "Fitness",
-    "Nutrition",
-    "Mental Health",
-    "Yoga",
-    "Meditation",
-    "Healthy Living",
-  ],
-  "Buisiness & Finance": [
-    "Entrepreneurship",
-    "Startups",
-    "Investing",
-    "Personal Finance",
-    "Leadership",
-    "E-commerce",
-    "Economics",
-  ],
-  "Writing & Communication": [
-    "Creative Writing",
-    "Technical Writing",
-    "Copywriting",
-    "Storytelling",
-    "Public Speaking",
-    "Blogging",
-    "Editing",
-  ],
-};
-
-const topicCategories = Object.entries(topicCategoryMap).map(
-  ([name, topics]) => ({
-    id: name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, ""),
-    name,
-    topics,
-  })
-);
+import { Controller, useForm } from "react-hook-form";
+import {
+  articleFormSchema,
+  ArticleFormValues,
+} from "../validators/article.validator";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { uploadImage } from "../utils/uploadToCloudinary";
+import { processImagesInContent } from "../helpers/processHtml";
+import { getHtmlContentLength } from "../helpers/getHtmlContentLength";
+import { IPreference } from "../types/preference.types";
+import { addArticle, getArticlePrefernces } from "../services/article.service";
+import { toast } from "sonner";
+import { LoadingSpinner } from "../components/ui/LoadingSpinner";
+import Header from "../components/Header";
 
 const modules = {
   toolbar: [
@@ -117,8 +50,8 @@ const modules = {
     ["blockquote", "code-block"],
     [{ list: "ordered" }, { list: "bullet" }],
     [{ indent: "-1" }, { indent: "+1" }],
-    ["link", "image", "video"],
-    ["clean"], // remove formatting
+    ["link", "image"],
+    ["clean"],
   ],
 };
 
@@ -135,92 +68,171 @@ const formats = [
   "indent",
   "link",
   "image",
-  "video",
 ];
 
-const ScrollaWriteArticle = () => {
-  const [title, setTitle] = useState("");
-  const [subtitle, setSubtitle] = useState("");
+const AddArticle = () => {
   const [content, setContent] = useState("");
-  const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [imagePreview, setImagePreview] = useState(null);
-  const [publishStatus, setPublishStatus] = useState<boolean>(false);
-  const [visibility, setVisibility] = useState("public");
+  const [publishStatus, setPublishStatus] = useState<boolean>(true);
+  const [visibility, setVisibility] = useState<"public" | "private">("public");
+  const [featureImage, setFeatureImage] = useState<File | null>(null);
+  const [preferences, setPreferences] = useState<IPreference[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
 
-  const naviage = useNavigate();
+  const [isLoading, setLoading] = useState<boolean>(false);
+
+  const fetchPrefences = async () => {
+    try {
+      setLoading(true);
+      const result = await getArticlePrefernces();
+      setPreferences(result.preferences);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Something went wrong"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPrefences();
+  }, []);
+
+  const [contentError, setContentError] = useState<string>("");
+
+  const articleForm = useForm<ArticleFormValues>({
+    resolver: zodResolver(articleFormSchema),
+    defaultValues: {
+      title: "",
+      subtitle: "",
+      topics: [],
+    },
+  });
+
+  const navigate = useNavigate();
 
   const handleBackClick = () => {
-    naviage(-1)
-  }
+    navigate(-1);
+  };
 
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreview(e.target.result);
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setImagePreview(event.target.result as string);
+        }
       };
+      setFeatureImage(file);
       reader.readAsDataURL(file);
     }
   };
 
   const removeImage = () => {
     setImagePreview(null);
+    setFeatureImage(null);
   };
 
-  const toggleTopic = (topic: string) => {
-    if (selectedTopics.includes(topic)) {
-      setSelectedTopics(selectedTopics.filter((t) => t !== topic));
+  const toggleTopic = (id: string, topic: string) => {
+    const currentTopics = articleForm.getValues("topics") || [];
+    const selectedTopics = articleForm.watch("topics") || [];
+
+    const isSelected = selectedTopics.includes(topic);
+
+    if (isSelected) {
+      const updatedTopics = currentTopics.filter((t) => t !== topic);
+      articleForm.setValue("topics", updatedTopics);
+      const preferenceTopicsStillSelected = updatedTopics.some((t) =>
+        preferences.find((pref) => pref._id === id)?.topics.includes(t)
+      );
+
+      if (!preferenceTopicsStillSelected) {
+        setCategories((prev) => prev.filter((catId) => catId !== id));
+      }
     } else {
-      if (selectedTopics.length < 5) {
-        setSelectedTopics([...selectedTopics, topic]);
+      if (currentTopics.length < 5) {
+        articleForm.setValue("topics", [...currentTopics, topic]);
+        setCategories((prev) => (prev.includes(id) ? prev : [...prev, id]));
       }
     }
   };
 
   const calculateReadTime = () => {
-    const wordCount = content.trim().split(/\s+/).length;
+    const wordCount = content.trim().split(/\s+/).filter(word => word !== "").length;
     const readTime = Math.ceil(wordCount / 200);
     return readTime > 0 ? `${readTime} min read` : "Less than 1 min read";
-  };
+};
 
   const cleanHtml = () => {
     return DOMPurify.sanitize(content);
   };
 
+  const handlePublish = async (data: ArticleFormValues) => {
+    try {
+      let featureImageUrl = "";
+
+      if (featureImage) {
+        const { secure_url } = await uploadImage(featureImage);
+        featureImageUrl = secure_url;
+      }
+
+      const htmlcontentLength = getHtmlContentLength(content);
+
+      if (htmlcontentLength === 0) {
+        setContentError("Please provide article body");
+        return;
+      } else if (htmlcontentLength < 199) {
+        setContentError("Article body must be 200 characters long");
+        return;
+      }
+
+      const processedHtml = await processImagesInContent(content);
+      const cleanedHtml = DOMPurify.sanitize(processedHtml);
+
+      const articleData = {
+        featureImage: featureImageUrl,
+        title: data.title,
+        subtitle: data.subtitle,
+        content: cleanedHtml,
+        topics: data.topics,
+        visibility: visibility,
+        isPublished: publishStatus,
+        categories: categories,
+        readTime: calculateReadTime(),
+      };
+
+      await addArticle(articleData);
+      toast.success("Article added");
+      navigate(-1);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Somethign went wrong"
+      );
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b bg-background/60 backdrop-blur">
-        <div className="container flex h-16 items-center justify-between px-4 md:px-6">
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold">Scrolla</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <Avatar className="h-8 w-8 cursor-pointer">
-              <img src="/api/placeholder/40/40" alt="User" />
-            </Avatar>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       <main className="container grid grid-cols-1 md:grid-cols-12 gap-6 p-4 md:p-6 lg:gap-10">
         <div className="md:hidden flex justify-between mb-4 col-span-1">
-          <Button variant="ghost" className="rounded-full"
-          onClick={handleBackClick}
+          <Button
+            variant="ghost"
+            className="rounded-full cursor-pointer"
+            onClick={handleBackClick}
           >
             <ArrowLeft className="h-5 w-5 mr-2" />
             Back
-          </Button>
-          <Button variant="outline" className="rounded-full">
-            Save draft
           </Button>
         </div>
         <div className="hidden md:block md:col-span-1">
           <div className="sticky top-24 space-y-4">
             <Button
               variant="ghost"
-              className="w-full justify-start rounded-lg"
+              className="w-full justify-start cursor-pointer rounded-lg"
               onClick={handleBackClick}
             >
               <ArrowLeft className="h-5 w-5 mr-2" />
@@ -229,9 +241,7 @@ const ScrollaWriteArticle = () => {
           </div>
         </div>
 
-        {/* Article editor - main area */}
         <div className="md:col-span-7 space-y-6">
-          {/* Featured image upload */}
           {!imagePreview ? (
             <div className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-muted/50 transition-colors">
               <input
@@ -277,27 +287,50 @@ const ScrollaWriteArticle = () => {
             <Label htmlFor="title" className="mb-1">
               Title
             </Label>
-            <Textarea
-              id="title"
-              placeholder="Enter the title"
-              className="text-4xl font-bold border resize-none p-2 bg-transparent"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              rows={1}
-              style={{ minHeight: "unset" }}
+            <Controller
+              control={articleForm.control}
+              name="title"
+              render={({ field }) => (
+                <Textarea
+                  id="title"
+                  placeholder="Enter the title"
+                  className="text-4xl font-bold border resize-none p-2 bg-transparent"
+                  {...articleForm.register("title")}
+                  {...field}
+                  rows={1}
+                  style={{ minHeight: "unset" }}
+                />
+              )}
             />
+            {articleForm.formState.errors.title && (
+              <p className="text-sm text-red-500">
+                {articleForm.formState.errors.title.message}
+              </p>
+            )}
+
             <Label htmlFor="subtitle" className="mb-1">
               Subtitle
             </Label>
-            <Textarea
-              id="subtitle"
-              placeholder="Enter the Subtitle"
-              className="text-xl text-muted-foreground border resize-none p-2 bg-transparent"
-              value={subtitle}
-              onChange={(e) => setSubtitle(e.target.value)}
-              rows={1}
-              style={{ minHeight: "unset" }}
+            <Controller
+              control={articleForm.control}
+              name="subtitle"
+              render={({ field }) => (
+                <Textarea
+                  id="subtitle"
+                  placeholder="Enter the Subtitle"
+                  className="text-xl text-muted-foreground border resize-none p-2 bg-transparent"
+                  {...articleForm.register("subtitle")}
+                  {...field}
+                  rows={1}
+                  style={{ minHeight: "unset" }}
+                />
+              )}
             />
+            {articleForm.formState.errors.subtitle && (
+              <p className="text-sm text-red-500">
+                {articleForm.formState.errors.subtitle.message}
+              </p>
+            )}
           </div>
           <Label htmlFor="body" className="mb-1">
             Body
@@ -312,22 +345,23 @@ const ScrollaWriteArticle = () => {
             formats={formats}
             placeholder="Write something amazing..."
           />
-
-          {/* Topics/Tags selector */}
+          {contentError && (
+            <p className="text-sm text-red-500">{contentError}</p>
+          )}
           <div className="bg-muted/30 p-6 rounded-lg">
             <h3 className="font-medium mb-4">Topics (up to 5)</h3>
 
             <div className="mb-4">
-              {selectedTopics.length > 0 ? (
+              {articleForm.getValues("topics").length > 0 ? (
                 <div className="flex flex-wrap gap-2 mb-4">
-                  {selectedTopics.map((topic) => (
+                  {articleForm.getValues("topics").map((topic) => (
                     <Badge
                       key={topic}
                       variant="secondary"
                       className="relative rounded-full px-3 py-1 pr-8"
                     >
                       {topic}
-                      <button
+                      {/* <button
                         onClick={(e) => {
                           e.stopPropagation();
                           toggleTopic(topic);
@@ -335,10 +369,14 @@ const ScrollaWriteArticle = () => {
                         className="absolute top-1/2 right-2 -translate-y-1/2 p-0 m-0 cursor-pointer"
                       >
                         <X className="h-3 w-3" />
-                      </button>
+                      </button> */}
                     </Badge>
                   ))}
                 </div>
+              ) : articleForm.formState.errors.topics ? (
+                <p className="text-sm text-red-500">
+                  {articleForm.formState.errors.topics.message}
+                </p>
               ) : (
                 <p className="text-sm text-muted-foreground mb-4">
                   Add topics to help readers discover your story
@@ -346,49 +384,58 @@ const ScrollaWriteArticle = () => {
               )}
             </div>
 
-            <Tabs defaultValue={topicCategories[0].id}>
-              <TabsList className="mb-10 flex flex-wrap justify-start gap-2">
-                {topicCategories.map((category) => (
+            {isLoading && <LoadingSpinner />}
+
+            {preferences.length > 0 && (
+              <Tabs defaultValue={preferences[0]._id}>
+              <TabsList className="sm:mb-10 mb-40 flex flex-wrap justify-start gap-2">
+                {preferences.map((preference) => (
                   <TabsTrigger
-                    key={category.id}
-                    value={category.id}
+                    key={preference._id}
+                    value={preference._id}
                     className="flex-grow-0 flex-shrink-0 w-auto px-3 justify-start"
                   >
-                    {category.name}
+                    {preference.name}
                   </TabsTrigger>
                 ))}
               </TabsList>
-
-              {topicCategories.map((category) => (
-                <TabsContent key={category.id} value={category.id}>
-                  <div className="flex flex-wrap gap-2">
-                    {category.topics.map((topic) => (
-                      <Badge
-                        key={topic}
-                        variant={
-                          selectedTopics.includes(topic) ? "outline" : "default"
-                        }
-                        className="rounded-full cursor-pointer hover:bg-muted transition-colors"
-                        onClick={() => toggleTopic(topic)}
-                      >
-                        {topic}
-                      </Badge>
-                    ))}
+            
+              {preferences.map((preference) => (
+                <TabsContent key={preference._id} value={preference._id}>
+                  <div className="w-full">
+                    <div className="mb-10 flex flex-wrap justify-start gap-2">
+                      {preference.topics.map((topic) => (
+                        <Badge
+                          key={topic}
+                          variant={
+                            articleForm.getValues("topics").includes(topic)
+                              ? "outline"
+                              : "default"
+                          }
+                          className="rounded-full cursor-pointer hover:bg-muted transition-colors"
+                          onClick={() => toggleTopic(preference._id, topic)}
+                        >
+                          {topic}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
                 </TabsContent>
               ))}
             </Tabs>
+            )}
           </div>
         </div>
 
-        {/* Right sidebar - publishing options */}
         <div className="md:col-span-4">
           <div className="sticky top-24 space-y-6">
-            {/* Preview and publish buttons */}
             <div className="flex flex-col gap-3">
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button variant="outline" className="w-full cursor-pointer rounded-full">
+                  <Button
+                    variant="outline"
+                    className="w-full cursor-pointer rounded-full"
+                  >
                     Preview
                   </Button>
                 </DialogTrigger>
@@ -402,11 +449,12 @@ const ScrollaWriteArticle = () => {
                   <div className="flex-1 overflow-auto py-4">
                     {/* Preview content would go here */}
                     <h1 className="text-3xl font-bold mb-2">
-                      {title || "Your Title Will Appear Here"}
+                      {articleForm.getValues("title") ||
+                        "Your Title Will Appear Here"}
                     </h1>
-                    {subtitle && (
+                    {articleForm.getValues("subtitle") && (
                       <p className="text-xl text-muted-foreground mb-4">
-                        {subtitle}
+                        {articleForm.getValues("subtitle")}
                       </p>
                     )}
                     {imagePreview && (
@@ -422,14 +470,22 @@ const ScrollaWriteArticle = () => {
                     />
                   </div>
                   <DialogFooter>
-                    <Button variant="outline" className="rounded-full">
-                      Close
-                    </Button>
+                    <DialogClose asChild>
+                      <Button
+                        variant="outline"
+                        className="rounded-full cursor-pointer"
+                      >
+                        Close
+                      </Button>
+                    </DialogClose>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
 
-              <Button className="w-full cursor-pointer rounded-full bg-black text-white hover:bg-black">
+              <Button
+                onClick={articleForm.handleSubmit(handlePublish)}
+                className="w-full cursor-pointer rounded-full bg-black text-white hover:bg-black"
+              >
                 Publish
               </Button>
             </div>
@@ -541,8 +597,8 @@ const ScrollaWriteArticle = () => {
                   <div className="flex items-center ms-3 gap-2">
                     <span>Topics:</span>
                     <span>
-                      {selectedTopics.length
-                        ? selectedTopics.join(", ")
+                      {articleForm.getValues("topics").length
+                        ? articleForm.getValues("topics").join(", ")
                         : "None selected"}
                     </span>
                   </div>
@@ -569,4 +625,4 @@ const ScrollaWriteArticle = () => {
   );
 };
 
-export default ScrollaWriteArticle;
+export default AddArticle;

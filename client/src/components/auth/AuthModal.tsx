@@ -23,24 +23,16 @@ import {
   SignUpFormValues,
 } from "../../validators/signup.validator";
 import { toast } from "sonner";
-import { IUserSignupInput, userSignin, userSignup } from "../../services/auth.service";
+import {
+  IUserSignupInput,
+  userSignin,
+  userSignup,
+} from "../../services/auth.service";
 import { useAuth } from "../../contexts/authContext";
-
-interface ArticlePreference {
-  id: string;
-  label: string;
-}
-
-const articlePreferences: ArticlePreference[] = [
-  { id: "technology", label: "Technology" },
-  { id: "business", label: "Business" },
-  { id: "science", label: "Science" },
-  { id: "sports", label: "Sports" },
-  { id: "entertainment", label: "Entertainment" },
-  { id: "health", label: "Health & Wellness" },
-  { id: "politics", label: "Politics" },
-  { id: "lifestyle", label: "Lifestyle" },
-];
+import { getArticlePrefernces } from "../../services/article.service";
+import { IPreference } from "../../types/preference.types";
+import { LoadingSpinner } from "../ui/LoadingSpinner";
+import { useNavigate } from "react-router-dom";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -56,9 +48,29 @@ const AuthModal: React.FC<AuthModalProps> = ({
   const [activeView, setActiveView] = useState<"sign-in" | "sign-up">(
     defaultTab
   );
+  const [loading, setLoading] = useState<boolean>(false)
+  const [preferences, setPreferences] = useState<IPreference[]>([])
 
+  const fetchPrefences = async () => {
+    try {
+      setLoading(true);
+      const result = await getArticlePrefernces();
+      setPreferences(result.preferences);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Something went wrong"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPrefences();
+  }, []);
 
   const { signin } = useAuth();
+  const navigate = useNavigate()
 
   useEffect(() => {
     setActiveView(defaultTab);
@@ -86,7 +98,6 @@ const AuthModal: React.FC<AuthModalProps> = ({
     mode: "onChange",
   });
   const onSignUpSubmit = async (data: SignUpFormValues) => {
-
     const userData: IUserSignupInput = {
       firstName: data.firstName,
       lastName: data.lastName,
@@ -94,12 +105,12 @@ const AuthModal: React.FC<AuthModalProps> = ({
       phone: data.phone,
       password: data.password,
       dob: data.dob,
-      preferences: data.preferences
-    }
+      preferences: data.preferences,
+    };
     try {
       await userSignup(userData);
       toast.success("User registerd successfully");
-      onClose();
+      setActiveView("sign-in")
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Something went wrong"
@@ -113,11 +124,12 @@ const AuthModal: React.FC<AuthModalProps> = ({
       signin(result.user, result.token);
       toast.success("User Signed in Successfully");
       onClose();
+      navigate("/feed")
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Something went wrong"
       );
-    } 
+    }
   };
 
   const handlePreferenceChange = (id: string, checked: boolean) => {
@@ -133,19 +145,10 @@ const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
-  // const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
-  //   if (e.target === e.currentTarget) {
-  //     onClose();
-  //   }
-  // };
-
   if (!isOpen) return null;
 
   return (
-    <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-      // onClick={handleBackdropClick}
-    >
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded-lg">
         <div className="w-full flex justify-end">
           <Button variant="ghost" size="icon" onClick={onClose}>
@@ -404,29 +407,34 @@ const AuthModal: React.FC<AuthModalProps> = ({
 
                 <div className="space-y-3">
                   <Label>Article Preferences</Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {articlePreferences.map((preference) => (
+                  {loading && <LoadingSpinner />}
+                  {preferences.length > 0 ? (
+                    <div className="grid grid-cols-2 gap-2">
+                    {preferences.map((preference) => (
                       <div
-                        key={preference.id}
+                        key={preference._id}
                         className="flex items-center space-x-2"
                       >
                         <Checkbox
-                          id={preference.id}
+                          id={preference._id}
                           onCheckedChange={(
                             checked: boolean | "indeterminate"
                           ) => {
                             handlePreferenceChange(
-                              preference.id,
+                              preference._id,
                               checked === true
                             );
                           }}
                         />
-                        <Label htmlFor={preference.id} className="font-normal">
-                          {preference.label}
+                        <Label htmlFor={preference._id} className="font-normal">
+                          {preference.name}
                         </Label>
                       </div>
                     ))}
                   </div>
+                  ) : (
+                    <p>Failed to fetch preferences</p>
+                  )}
                   {signUpForm.formState.errors.preferences && (
                     <p className="text-sm text-red-500">
                       {signUpForm.formState.errors.preferences.message}

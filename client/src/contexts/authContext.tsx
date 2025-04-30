@@ -6,6 +6,7 @@ interface AuthContextType {
     token: string | null;
     signin: (userData: IUser, token: string) => void;
     signout: () => void;
+    updateUser: (user: IUser) => void;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);

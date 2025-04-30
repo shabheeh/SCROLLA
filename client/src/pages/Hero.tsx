@@ -6,10 +6,7 @@ export const Hero = () => {
 
   return (
     <div className="flex flex-col w-full h-screen overflow-hidden">
-      {/* Navbar */}
       <Navbar />
-
-      {/* Main Content */}
       <main
         className="flex flex-row items-center justify-center flex-1 border-b"
         style={{ backgroundColor: "#fef5e6" }}

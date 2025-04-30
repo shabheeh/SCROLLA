@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { IUser } from "../types/user.types";
-import { AuthContext } from "../contexts/authContext";
+import { IUser } from "../../types/user.types";
+import { AuthContext } from "../../contexts/authContext";
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -19,29 +19,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   const signin = (userData: IUser, token: string) => {
-
-    setUser(userData)
-    setToken(token)
+    setUser(userData);
+    setToken(token);
 
     localStorage.setItem("user", JSON.stringify(userData));
-    localStorage.setItem("token" , token);
-  }
+    localStorage.setItem("token", token);
+  };
 
   const signout = () => {
-    
     setUser(null);
     setToken(null);
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+  };
 
-    localStorage.removeItem('user');
-    localStorage.removeItem("token")
-  }
+  const updateUser = (user: IUser) => {
+    setUser(user);
+    localStorage.setItem("user", JSON.stringify(user));
+  };
 
   const value = {
     user,
     token,
     signin,
-    signout
-  }
+    signout,
+    updateUser,
+  };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

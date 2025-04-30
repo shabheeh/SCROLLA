@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const signUpFormSchema = z
+export const profileFormSchema = z
   .object({
     firstName: z.string().min(2, "First name must be at least 2 characters"),
     lastName: z.string().min(2, "Last name must be at least 2 characters"),
@@ -22,33 +22,10 @@ export const signUpFormSchema = z
         }
         return age >= 12;
       }, "You must be at least 12 years old"),
-    password: z
-      .string()
-      .min(8, "Password must be at least 8 characters")
-      .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-      .regex(/[a-z]/, "Password must contain at least one lowercase letter")
-      .regex(/[0-9]/, "Password must contain at least one number")
-      .regex(
-        /[^A-Za-z0-9]/,
-        "Password must contain at least one special character"
-      ),
-    confirmPassword: z.string(),
     preferences: z.array(z.string()).refine((val) => val.length > 0, {
       message: "Please select at least one article preference",
     }),
   })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match",
-    path: ["confirmPassword"],
-  });
 
-export const signInFormSchema = z.object({
-  email: z
-    .string()
-    .email("Please enter a valid email address")
-    .min(1, "Email is required"),
-  password: z.string().min(1, "Password is required"),
-});
 
-export type SignUpFormValues = z.infer<typeof signUpFormSchema>;
-export type SignInFormValues = z.infer<typeof signInFormSchema>;
+export type ProfileFormValues = z.infer<typeof profileFormSchema>;

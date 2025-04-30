@@ -9,6 +9,9 @@ module.exports = {
             poppins: ['Poppins', 'sans-serif'],
           },
       },
+      animation: {
+        'spinner-leaf-fade': 'spinner-leaf-fade 800ms linear infinite',
+      },
     },
     plugins: [],
   };

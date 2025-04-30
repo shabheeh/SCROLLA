@@ -30,7 +30,7 @@ api.interceptors.request.use(
     const token = localStorage.getItem("token");
     if (token) {
       config.headers["Authorization"] = `Bearer ${token}`;
-    }
+    } 
     return config;
   },
   (error) => Promise.reject(error)
@@ -59,7 +59,11 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const response = await axios.post(`${baseURL}/refresh-token`);
+        const response = await axios.post(
+          `${baseURL}/refresh-token`,
+          {},
+          { withCredentials: true }
+        );
 
         const { token } = response.data;
 

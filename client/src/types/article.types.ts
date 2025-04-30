@@ -1,21 +1,31 @@
+import { IUser } from "./user.types";
+
 export interface IArticle {
-    userId: string;
+    _id: string;
+    author: IUser;
     featureImage: string;
     title: string;
     subtitle: string;
-    body: string;
+    content: string;
     topics: string[];
+    categories: string[];
+    readTime: number;
     visibility: "public" | "private";
     isPublished: boolean;
+    likedBy: string[];
+    dislikedBy: string[];
+    blockedBy: string[];
+    createdAt: Date;
 }
 
 export type IArticleInput = {
-    userId: string;
-    featureImage: File | null;
+    featureImage: string;
     title: string;
     subtitle: string;
-    body: string;
+    content: string;
     topics: string[];
+    categories: string[]
     visibility: "public" | "private";
     isPublished: boolean;
+    readTime: string;
 }
