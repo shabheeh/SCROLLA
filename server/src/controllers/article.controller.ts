@@ -208,16 +208,25 @@ export const getArticle = async (
 };
 
 export const getUserArticles = async (
-  req: Request,
+  req: CustomRequest,
   res: Response
 ): Promise<void> => {
-  const userId = req.params.userId;
+  const authorId = req.params.userId;
+  const userId = req.userId;
 
-  const articles = await ArticleModel.find({
-    author: userId,
-    isPublished: true,
-    visibility: "public",
-  }).populate("author", "_id");
+  let articles = [];
+
+  if (authorId === userId) {
+    articles = await ArticleModel.find({
+      author: userId,
+    }).populate("author", "_id");
+  } else {
+    articles = await ArticleModel.find({
+      author: authorId,
+      isPublished: true,
+      visibility: "public",
+    }).populate("author", "_id");
+  }
 
   res.status(HttpStatusCode.OK).json({
     success: true,

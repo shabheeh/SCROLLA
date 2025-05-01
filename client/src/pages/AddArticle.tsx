@@ -614,9 +614,6 @@ const AddArticle = () => {
                 <li>• Keep paragraphs short and scannable</li>
                 <li>• End with a clear call to action</li>
               </ul>
-              <Button variant="link" className="p-0 h-auto mt-2 text-sm">
-                Learn more about writing on Scrolla
-              </Button>
             </div>
           </div>
         </div>

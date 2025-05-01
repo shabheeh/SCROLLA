@@ -111,9 +111,7 @@ export const getUserArticles = async (userId: string): Promise<IArticle[]> => {
   }
 };
 
-export const likeArticle = async (
-  articleId: string
-): Promise<IArticle> => {
+export const likeArticle = async (articleId: string): Promise<IArticle> => {
   try {
     const response = await api.patch(`/articles/${articleId}/like`);
 
@@ -130,12 +128,29 @@ export const likeArticle = async (
   }
 };
 
-export const dislikeArticle = async (
-  articleId: string
-): Promise<IArticle> => {
+export const dislikeArticle = async (articleId: string): Promise<IArticle> => {
   try {
     const response = await api.patch(`/articles/${articleId}/dislike`);
 
+    return response.data.article;
+  } catch (error) {
+    console.log(error);
+
+    if (error instanceof Error) {
+      throw new Error(error.message);
+    } else {
+      console.log(error);
+      throw new Error("An error occured");
+    }
+  }
+};
+
+export const editArticle = async (
+  articleId: string,
+  articleData: IArticleInput
+): Promise<IArticle> => {
+  try {
+    const response = await api.put(`/articles/${articleId}`, articleData);
     return response.data.article;
   } catch (error) {
     console.log(error);
