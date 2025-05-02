@@ -45,7 +45,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
   onClose,
   defaultTab,
 }) => {
-  const [activeView, setActiveView] = useState<"sign-in" | "sign-up">(
+  const [activeView, setActiveView] = useState<"sign-in" | "sign-up" | "otp">(
     defaultTab
   );
   const [loading, setLoading] = useState<boolean>(false)
@@ -151,7 +151,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded-lg">
         <div className="w-full flex justify-end">
-          <Button variant="ghost" size="icon" onClick={onClose}>
+          <Button className="cursor-pointer" variant="ghost" size="icon" onClick={onClose}>
             <X className="h-5 w-5" />
             <span className="sr-only">Close</span>
           </Button>
@@ -465,6 +465,9 @@ const AuthModal: React.FC<AuthModalProps> = ({
               </CardFooter>
             </form>
           )}
+          {/* {activeView === "otp" && (
+            
+          )} */}
         </Card>
       </div>
     </div>

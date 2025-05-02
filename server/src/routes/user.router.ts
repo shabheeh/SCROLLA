@@ -16,6 +16,7 @@ import asyncWrapper from "../utils/asyncWrapper";
 import { authenticate } from "../middlewares/authMiddleware";
 import {
   addArticle,
+  deleteArticle,
   dislikeArticle,
   editArticle,
   getArticle,
@@ -53,6 +54,11 @@ router.put(
   authenticate,
   // validateArticle,
   asyncWrapper(editArticle)
+);
+router.delete(
+  "/articles/:articleId",
+  authenticate,
+  asyncWrapper(deleteArticle)
 );
 router.get(
   "/users/:userId/articles",

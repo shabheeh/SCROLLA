@@ -61,6 +61,9 @@ export const getArticles = async (
 
   const searchQuery = req.query.searchQuery as string | undefined;
   const preferenceQuery = req.query.preference as string | undefined;
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = 3;
+  const skip = (page - 1) * limit;
 
   const matchStage: {
     visibility: "public" | "private";
@@ -89,8 +92,13 @@ export const getArticles = async (
     };
   }
 
+  const totalArticles = await ArticleModel.countDocuments(matchStage);
+
   const articles = await ArticleModel.aggregate([
     { $match: matchStage },
+    { $sort: { createdAt: -1 } },
+    { $skip: skip },
+    { $limit: limit },
     {
       $lookup: {
         from: "users",
@@ -129,6 +137,9 @@ export const getArticles = async (
     success: true,
     message: ResponseMessage.SUCCESS.OPERATION_SUCCESSFUL,
     articles,
+    currentPage: page,
+    totalArticles,
+    totalPages: Math.ceil(totalArticles / limit),
   });
 };
 
@@ -329,5 +340,30 @@ export const editArticle = async (
     success: true,
     message: ResponseMessage.SUCCESS.RESOURCE_UPDATED,
     article: updatedArticle,
+  });
+};
+
+export const deleteArticle = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const { articleId } = req.params;
+
+  if (!isValidObjectId(articleId)) {
+    throw new CustomError("Invalid article id", HttpStatusCode.BAD_REQUEST);
+  }
+
+  const deletedArticle = await ArticleModel.findByIdAndDelete(articleId);
+
+  if (!deletedArticle) {
+    throw new CustomError(
+      "Failed to delete article",
+      HttpStatusCode.INTERNAL_SERVER_ERROR
+    );
+  }
+
+  res.status(HttpStatusCode.OK).json({
+    success: true,
+    message: ResponseMessage.SUCCESS.RESOURCE_DELETED,
   });
 };

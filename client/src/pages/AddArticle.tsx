@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft, Image, X, Clock, Globe, Lock } from "lucide-react";
-import { Avatar } from "../components/ui/avatar";
 import { Button } from "../components/ui/button";
 import { Textarea } from "../components/ui/textarea";
 import { Separator } from "../components/ui/separator";
@@ -72,12 +71,13 @@ const formats = [
 
 const AddArticle = () => {
   const [content, setContent] = useState("");
-  const [imagePreview, setImagePreview] = useState(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [publishStatus, setPublishStatus] = useState<boolean>(true);
   const [visibility, setVisibility] = useState<"public" | "private">("public");
   const [featureImage, setFeatureImage] = useState<File | null>(null);
   const [preferences, setPreferences] = useState<IPreference[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
+  const [isArticleSubmitting, setArticleSubmitting] = useState<boolean>(false)
 
   const [isLoading, setLoading] = useState<boolean>(false);
 
@@ -171,6 +171,7 @@ const AddArticle = () => {
 
   const handlePublish = async (data: ArticleFormValues) => {
     try {
+      setArticleSubmitting(true)
       let featureImageUrl = "";
 
       if (featureImage) {
@@ -210,6 +211,8 @@ const AddArticle = () => {
       toast.error(
         error instanceof Error ? error.message : "Somethign went wrong"
       );
+    } finally {
+      setArticleSubmitting(false)
     }
   };
 
@@ -483,10 +486,11 @@ const AddArticle = () => {
               </Dialog>
 
               <Button
+              disabled={isArticleSubmitting}
                 onClick={articleForm.handleSubmit(handlePublish)}
                 className="w-full cursor-pointer rounded-full bg-black text-white hover:bg-black"
               >
-                Publish
+                {isArticleSubmitting ? "Publishing..." : "Publish"}
               </Button>
             </div>
 

@@ -3,7 +3,6 @@ import {
   User,
   Settings,
   PenSquare,
-  Bookmark,
   LogOut,
   Upload,
   Eye,
@@ -30,7 +29,6 @@ import {
 import { Label } from "../components/ui/label";
 import { IPreference } from "../types/preference.types";
 import {
-  addArticle,
   getArticlePrefernces,
   getUserArticles,
 } from "../services/article.service";
@@ -45,19 +43,25 @@ import { IArticle } from "../types/article.types";
 import { Button } from "../components/ui/button";
 
 import EditArticle from "../components/EditArticle";
+import DeleteArticleModal from "../components/DeleteArticleModal";
+import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 
 const UserProfile = () => {
-  const [activeTab, setActiveTab] = useState("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "articles" | "security" | "saved">("profile");
   const [showPassword, setShowPassword] = useState(false);
   const [passwordUpdated, setPasswordUpdated] = useState(false);
   const [profileUpdated, setProfileUpdated] = useState(false);
   const [profilePicture, setProfilePicture] = useState<File | null>(null);
   const [preferences, setPreferences] = useState<IPreference[]>([]);
-  const [profilePicturePreview, setProfilePicturePreview] = useState(null);
+  const [profilePicturePreview, setProfilePicturePreview] = useState<string | null>(null);
   const [articles, setArticles] = useState<IArticle[]>([]);
   const [isArticlesLaoding, setArticlesLoading] = useState<boolean>(false);
   const [selectedArticle, setSelectedArticle] = useState<IArticle | null>(null);
   const [isArticleEditing, setArticleEditng] = useState<boolean>(false);
+
+  const [selectedDeletingArticle, setDeletingArticle] =
+    useState<IArticle | null>(null);
+  const [isDeleteModalOpen, setDeleteModalOpen] = useState<boolean>(false);
 
   const { user, signout, updateUser } = useAuth();
   const navigate = useNavigate();
@@ -84,9 +88,6 @@ const UserProfile = () => {
     }
   };
 
-  const handleBackClick = () => {
-    navigate(-1);
-  };
 
   const profileForm = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -136,12 +137,12 @@ const UserProfile = () => {
     }
   };
 
-  const handleTabChange = (tab) => {
+  const handleTabChange = (tab: "profile" | "articles" | "security" | "saved") => {
     setActiveTab(tab);
     setPasswordUpdated(false);
     setProfileUpdated(false);
-    setSelectedArticle(null)
-    setArticleEditng(false)
+    setSelectedArticle(null);
+    setArticleEditng(false);
   };
 
   const handlePasswordUpdate = async (data: PasswordFormValues) => {
@@ -199,15 +200,32 @@ const UserProfile = () => {
   };
 
   const handleEditArticle = (article: IArticle) => {
-    setSelectedArticle(article)
-    setArticleEditng(true)
-  }
+    setSelectedArticle(article);
+    setArticleEditng(true);
+  };
 
   const handleCancelEditArticle = () => {
-    setSelectedArticle(null)
-    setArticleEditng(false)
-    fetchArticles()
-  }
+    setSelectedArticle(null);
+    setArticleEditng(false);
+    fetchArticles();
+  };
+
+  const handleDeleteArticle = (article: IArticle) => {
+    setDeletingArticle(article);
+    setDeleteModalOpen(true);
+  };
+
+  const handleCofirmDelete = () => {
+    if (selectedDeletingArticle) {
+      setArticles((prevArticles) =>
+        prevArticles.filter(
+          (article) => article._id !== selectedDeletingArticle._id
+        )
+      );
+    }
+    setArticleEditng(false);
+    setDeletingArticle(null);
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -278,7 +296,7 @@ const UserProfile = () => {
               <button
                 className={`flex items-center w-full p-3 rounded-lg ${
                   activeTab === "articles"
-                    ? "bg-secondary/50 font-medium"
+                    ? "bg-secondary/50 font-bold"
                     : "hover:bg-secondary/20"
                 }`}
                 onClick={() => handleTabChange("articles")}
@@ -286,17 +304,17 @@ const UserProfile = () => {
                 <PenSquare className="h-5 w-5 mr-3" />
                 <span>My Articles</span>
               </button>
-              <button
+              {/* <button
                 className={`flex items-center w-full p-3 rounded-lg ${
                   activeTab === "saved"
-                    ? "bg-secondary/50 font-medium"
+                    ? "bg-secondary/50 font-bold"
                     : "hover:bg-secondary/20"
                 }`}
                 onClick={() => handleTabChange("saved")}
               >
                 <Bookmark className="h-5 w-5 mr-3" />
                 <span>Saved Articles</span>
-              </button>
+              </button> */}
               <button
                 className={`flex items-center w-full p-3 rounded-lg ${
                   activeTab === "security"
@@ -326,7 +344,6 @@ const UserProfile = () => {
           <div className="h-full w-px bg-gray-200 mx-auto"></div>
         </div>
 
-        {/* Main Content Area */}
         <div className="md:col-span-8 pt-6 md:pt-0">
           {activeTab === "profile" && (
             <div className="px-2">
@@ -503,7 +520,6 @@ const UserProfile = () => {
                   </div>
                   <div className="space-y-3">
                     <Label>Article Preferences</Label>
-                    {/* {loading && <LoadingSpinner />} */}
                     {preferences.length > 0 ? (
                       <div className="grid grid-cols-2 gap-2">
                         {preferences.map((preference) => (
@@ -575,11 +591,15 @@ const UserProfile = () => {
 
           {activeTab === "articles" &&
             (isArticleEditing && selectedArticle ? (
-              <EditArticle onCancel={handleCancelEditArticle} preferences={preferences} article={selectedArticle} />
+              <EditArticle
+                onCancel={handleCancelEditArticle}
+                preferences={preferences}
+                article={selectedArticle}
+              />
             ) : (
               <div className="px-2">
                 <h2 className="text-2xl font-bold mb-6">My Articles</h2>
-
+                {isArticlesLaoding && <LoadingSpinner />}
                 {articles && articles.length > 0 ? (
                   <div className="space-y-8">
                     {articles.map((article, idx) => (
@@ -615,10 +635,13 @@ const UserProfile = () => {
                             <div className="flex gap-3">
                               <button
                                 onClick={() => handleEditArticle(article)}
-                               className="px-4 py-2 text-sm bg-secondary/30 rounded-lg hover:bg-secondary/50">
+                                className="px-4 py-2 cursor-pointer text-sm bg-secondary/30 rounded-lg hover:bg-secondary/50"
+                              >
                                 Edit
                               </button>
-                              <button className="px-4 py-2 text-sm bg-red-50 text-red-600 rounded-lg hover:bg-red-100">
+                              <button
+                              onClick={ () => handleDeleteArticle(article)}
+                               className="px-4 cursor-pointer py-2 text-sm bg-red-50 text-red-600 rounded-lg hover:bg-red-100">
                                 Delete
                               </button>
                             </div>
@@ -632,7 +655,9 @@ const UserProfile = () => {
                     <p className="text-lg text-muted-foreground mb-4">
                       You haven't published any articles yet.
                     </p>
-                    <button className="px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90">
+                    <button
+                    onClick={() => navigate('/write')}
+                     className="px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90">
                       Write Your First Article
                     </button>
                   </div>
@@ -641,7 +666,7 @@ const UserProfile = () => {
             ))}
 
           {/* Saved Articles */}
-          {activeTab === "saved" && (
+          {/* {activeTab === "saved" && (
             <div className="px-2">
               <h2 className="text-2xl font-bold mb-6">Saved Articles</h2>
 
@@ -715,7 +740,7 @@ const UserProfile = () => {
                 </div>
               )}
             </div>
-          )}
+          )} */}
 
           {activeTab === "security" && (
             <div className="px-2">
@@ -871,6 +896,17 @@ const UserProfile = () => {
           )}
         </div>
       </main>
+      {selectedDeletingArticle && (
+        <DeleteArticleModal
+          isOpen={isDeleteModalOpen}
+          onClose={() => {
+            setDeleteModalOpen(false);
+            setDeletingArticle(null);
+          }}
+          onConfirm={handleCofirmDelete}
+          article={selectedDeletingArticle}
+        />
+      )}
     </div>
   );
 };

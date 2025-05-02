@@ -18,7 +18,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "../components/ui/carousel";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { IPreference } from "../types/preference.types";
 import { toast } from "sonner";
 import {
@@ -40,6 +40,12 @@ const ArticleFeed = () => {
   const [selectedPreference, setSelectedPreference] = useState<string>("");
   const [debouncedSearch, setDebouncedSearch] = useState<string>(searchValue);
   const [trendingArticles, setTrendingArticles] = useState<IArticle[]>();
+  const [loading, setLoading] = useState<boolean>(false);
+
+  const [page, setPage] = useState<number>(1);
+  const [hasMore, setHasMore] = useState<boolean>(true);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loaderRef = useRef<HTMLDivElement | null>(null);
 
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -54,10 +60,6 @@ const ArticleFeed = () => {
     };
   }, [searchValue]);
 
-  useEffect(() => {
-    fetchArticles();
-  }, [selectedPreference, debouncedSearch]);
-
   const fetchPrefences = async () => {
     try {
       const result = await getArticlePrefernces();
@@ -69,14 +71,70 @@ const ArticleFeed = () => {
     }
   };
 
-  const fetchArticles = async () => {
+  useEffect(() => {
+    const options: IntersectionObserverInit = {
+      root: null,
+      rootMargin: "20px",
+      threshold: 0.1,
+    };
+
+    observerRef.current = new IntersectionObserver((entries) => {
+      const [entry] = entries;
+
+      if (entry.isIntersecting && !loading && hasMore) {
+        setPage((prevPage) => prevPage + 1);
+      }
+    }, options);
+
+    if (loaderRef.current) {
+      observerRef.current.observe(loaderRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [loading, hasMore]);
+
+  useEffect(() => {
+    if (debouncedSearch !== undefined || selectedPreference !== undefined) {
+      setArticles([]);
+      setPage(1);
+      setHasMore(true);
+    }
+  }, [debouncedSearch, selectedPreference]);
+
+  useEffect(() => {
+    fetchArticles();
+  }, [page, debouncedSearch, selectedPreference]);
+
+  const fetchArticles = async (): Promise<void> => {
+    setLoading(true);
+    
     try {
-      const result = await getArticles(debouncedSearch, selectedPreference);
-      setArticles(result);
+      const result = await getArticles(
+        debouncedSearch,
+        selectedPreference,
+        page
+      );
+      
+      if (page === 1) {
+        setArticles(result.articles);
+      } else {
+        setArticles((prevArticles) => [...prevArticles, ...result.articles]);
+      }
+      
+      const hasMorePages = page < result.totalPages;
+      setHasMore(hasMorePages);
+      
+      console.log(`Page ${page} of ${result.totalPages}, has more: ${hasMorePages}`);
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Something went wrong"
       );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -186,15 +244,11 @@ const ArticleFeed = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur">
         <div className="container flex h-16 items-center justify-between px-2 sm:px-4 md:px-6">
-          {/* Logo */}
           <div className="flex items-center gap-2">
             <h1 className="text-xl sm:text-2xl font-bold">SCROLLA</h1>
           </div>
-
-          {/* Search - hidden on smallest screens */}
           <div className="hidden sm:block relative w-full max-w-sm px-2 sm:px-4">
             <Search className="absolute left-4 sm:left-6 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
             <Input
@@ -205,9 +259,7 @@ const ArticleFeed = () => {
             />
           </div>
 
-          {/* Actions */}
           <div className="flex items-center gap-2 sm:gap-4">
-            {/* Search button on smallest screens */}
             <Button
               className="sm:hidden rounded-full"
               variant="ghost"
@@ -216,7 +268,6 @@ const ArticleFeed = () => {
               <Search className="h-5 w-5" />
             </Button>
 
-            {/* Write button */}
             <Button
               className="rounded-full cursor-pointer"
               variant="ghost"
@@ -283,7 +334,7 @@ const ArticleFeed = () => {
                     <Button
                       variant={selectedPreference === "" ? "outline" : "ghost"}
                       size="sm"
-                      className="rounded-full whitespace-nowrap text-xs sm:text-sm"
+                      className="rounded-full cursor-pointer whitespace-nowrap text-xs sm:text-sm"
                       onClick={() => setSelectedPreference("")}
                     >
                       For you
@@ -301,7 +352,7 @@ const ArticleFeed = () => {
                             : "ghost"
                         }
                         size="sm"
-                        className="rounded-full whitespace-nowrap text-xs sm:text-sm"
+                        className="rounded-full cursor-pointer whitespace-nowrap text-xs sm:text-sm"
                         onClick={() => setSelectedPreference(preference._id)}
                       >
                         {preference.name}
@@ -310,11 +361,11 @@ const ArticleFeed = () => {
                   ))}
                 </CarouselContent>
                 <CarouselPrevious
-                  className="h-6 w-6 sm:h-8 sm:w-8 absolute -left-6 sm:-left-10 bg-transparent border-none hover:bg-transparent hover:opacity-80"
+                  className="h-6 w-6 cursor-pointer sm:h-8 sm:w-8 absolute -left-6 sm:-left-10 bg-transparent border-none hover:bg-transparent hover:opacity-80"
                   variant="ghost"
                 />
                 <CarouselNext
-                  className="h-6 w-6 sm:h-8 sm:w-8 absolute -right-6 sm:-right-10 bg-transparent border-none hover:bg-transparent hover:opacity-80"
+                  className="h-6 w-6 sm:h-8 sm:w-8 cursor-pointer absolute -right-6 sm:-right-10 bg-transparent border-none hover:bg-transparent hover:opacity-80"
                   variant="ghost"
                 />
               </Carousel>
@@ -457,6 +508,18 @@ const ArticleFeed = () => {
               </div>
             </div>
           )}
+          <div ref={loaderRef} className="mt-4 text-center">
+            {loading && (
+              <div className="py-4">
+                <div className="w-8 h-8 border-t-2 border-b-2 border-gray-500 rounded-full animate-spin mx-auto"></div>
+                <p className="mt-2 text-gray-500">Loading more articles...</p>
+              </div>
+            )}
+
+            {!hasMore && !loading && articles.length > 0 && (
+              <p className="py-4 text-gray-500">No more articles to load</p>
+            )}
+          </div>
         </div>
 
         <div className="hidden lg:block lg:col-span-4 border-l border-gray-300 space-y-8">

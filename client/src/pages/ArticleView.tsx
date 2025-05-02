@@ -1,11 +1,8 @@
 import {
   ThumbsUp,
-  MessageSquare,
   EllipsisVertical,
   ThumbsDown,
   ArrowLeft,
-  BookmarkPlus,
-  Flag,
 } from "lucide-react";
 import { Avatar } from "../components/ui/avatar";
 import { Button } from "../components/ui/button";

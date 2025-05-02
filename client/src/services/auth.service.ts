@@ -1,7 +1,7 @@
 import { IUser, UpdateUser } from "../types/user.types";
 import api from "../utils/axios.interceptor";
 
-export interface IUserSignupInput extends Omit<IUser, "_id"> {
+export interface IUserSignupInput extends Omit<IUser , "_id" | "createdAt"> {
   password: string;
 }
 

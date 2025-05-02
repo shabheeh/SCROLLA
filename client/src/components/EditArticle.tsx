@@ -2,11 +2,10 @@ import { useState } from "react";
 import { X, Globe, Lock, Clock, Image } from "lucide-react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Label } from "../components/ui/label";
 import { IPreference } from "../types/preference.types";
-import { addArticle, editArticle } from "../services/article.service";
+import { editArticle } from "../services/article.service";
 import { uploadImage } from "../utils/uploadToCloudinary";
 import { Button } from "../components/ui/button";
 import { getHtmlContentLength } from "../helpers/getHtmlContentLength";
@@ -22,7 +21,6 @@ import "react-quill/dist/quill.snow.css";
 import DOMPurify from "dompurify";
 import { Textarea } from "../components/ui/textarea";
 import { Badge } from "../components/ui/badge";
-import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 import {
   Tabs,
   TabsContent,
@@ -77,7 +75,7 @@ type EditArticleProps = {
 
 const EditArticle: React.FC<EditArticleProps> = ({ preferences, article, onCancel }) => {
   const [content, setContent] = useState(article.content);
-  const [imagePreview, setImagePreview] = useState(article.featureImage);
+  const [imagePreview, setImagePreview] = useState<string | null>(article.featureImage);
   const [publishStatus, setPublishStatus] = useState<boolean>(article.isPublished);
   const [visibility, setVisibility] = useState<"public" | "private">(article.visibility);
   const [featureImage, setFeatureImage] = useState<File | null>(null);

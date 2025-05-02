@@ -43,14 +43,20 @@ export const addArticle = async (
 
 export const getArticles = async (
   searchValue: string,
-  preference: string
-): Promise<IArticle[]> => {
+  preference: string,
+  page: number,
+
+): Promise<{
+  articles: IArticle[];
+  currentPage: number;
+  totalArticles: number;
+  totalPages: number;
+}> => {
   try {
     const response = await api.get(
-      `/articles?searchQuery=${searchValue}&preference=${preference}`
+      `/articles?searchQuery=${searchValue}&preference=${preference}&page=${page}`
     );
-    const { articles } = response.data;
-    return articles;
+    return response.data;
   } catch (error) {
     console.log(error);
 
@@ -152,6 +158,21 @@ export const editArticle = async (
   try {
     const response = await api.put(`/articles/${articleId}`, articleData);
     return response.data.article;
+  } catch (error) {
+    console.log(error);
+
+    if (error instanceof Error) {
+      throw new Error(error.message);
+    } else {
+      console.log(error);
+      throw new Error("An error occured");
+    }
+  }
+};
+
+export const deleteArticle = async (articleId: string): Promise<void> => {
+  try {
+    await api.delete(`/articles/${articleId}`);
   } catch (error) {
     console.log(error);
 
