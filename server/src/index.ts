@@ -4,7 +4,7 @@ import cookieParser from "cookie-parser";
 import morgan from "morgan";
 import dotenv from "dotenv";
 dotenv.config();
-import sessionConfig from "../src/configs/session.config";
+import sessionConfig from "./configs/session.config";
 import connectDB from "./configs/db";
 import userRouter from "./routes/user.router";
 import errorHandler from "./middlewares/error.middleware";
