@@ -15,7 +15,7 @@ import { Label } from "../../components/ui/label";
 import { Button } from "../../components/ui/button";
 import { Checkbox } from "../../components/ui/checkbox";
 
-import { X } from "lucide-react";
+import { Eye, EyeOff, X } from "lucide-react";
 import {
   signInFormSchema,
   SignInFormValues,
@@ -33,6 +33,7 @@ import { getArticlePrefernces } from "../../services/article.service";
 import { IPreference } from "../../types/preference.types";
 import { LoadingSpinner } from "../ui/LoadingSpinner";
 import { useNavigate } from "react-router-dom";
+import OtpForm from "./OtpForm";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -48,8 +49,10 @@ const AuthModal: React.FC<AuthModalProps> = ({
   const [activeView, setActiveView] = useState<"sign-in" | "sign-up" | "otp">(
     defaultTab
   );
-  const [loading, setLoading] = useState<boolean>(false)
-  const [preferences, setPreferences] = useState<IPreference[]>([])
+  const [loading, setLoading] = useState<boolean>(false);
+  const [preferences, setPreferences] = useState<IPreference[]>([]);
+  const [email, setEmail] = useState<string>("");
+  const [showPassword, setShowPassword] = useState<boolean>(false);
 
   const fetchPrefences = async () => {
     try {
@@ -70,7 +73,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
   }, []);
 
   const { signin } = useAuth();
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   useEffect(() => {
     setActiveView(defaultTab);
@@ -108,9 +111,10 @@ const AuthModal: React.FC<AuthModalProps> = ({
       preferences: data.preferences,
     };
     try {
-      await userSignup(userData);
-      toast.success("User registerd successfully");
-      setActiveView("sign-in")
+      const result = await userSignup(userData);
+      setEmail(result);
+      toast.success("Otp sent to your email");
+      setActiveView("otp");
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Something went wrong"
@@ -124,7 +128,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
       signin(result.user, result.token);
       toast.success("User Signed in Successfully");
       onClose();
-      navigate("/feed")
+      navigate("/feed");
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Something went wrong"
@@ -151,7 +155,12 @@ const AuthModal: React.FC<AuthModalProps> = ({
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded-lg">
         <div className="w-full flex justify-end">
-          <Button className="cursor-pointer" variant="ghost" size="icon" onClick={onClose}>
+          <Button
+            className="cursor-pointer"
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+          >
             <X className="h-5 w-5" />
             <span className="sr-only">Close</span>
           </Button>
@@ -367,12 +376,28 @@ const AuthModal: React.FC<AuthModalProps> = ({
                     control={signUpForm.control}
                     name="password"
                     render={({ field }) => (
-                      <Input
-                        id="password"
-                        type="password"
-                        {...signUpForm.register("password")}
-                        {...field}
-                      />
+                      <div className="relative">
+                        <Input
+                          id="password"
+                          type={showPassword ? "text" : "password"}
+                          {...signUpForm.register("password", {
+                            required: "Password is required",
+                          })}
+                          {...field}
+                          className="pr-10"
+                        />
+                        <Button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5 text-gray-600 focus:outline-none"
+                        >
+                          {showPassword ? (
+                            <Eye />
+                          ) : (
+                            <EyeOff />
+                          )}
+                        </Button>
+                      </div>
                     )}
                   />
 
@@ -410,28 +435,31 @@ const AuthModal: React.FC<AuthModalProps> = ({
                   {loading && <LoadingSpinner />}
                   {preferences.length > 0 ? (
                     <div className="grid grid-cols-2 gap-2">
-                    {preferences.map((preference) => (
-                      <div
-                        key={preference._id}
-                        className="flex items-center space-x-2"
-                      >
-                        <Checkbox
-                          id={preference._id}
-                          onCheckedChange={(
-                            checked: boolean | "indeterminate"
-                          ) => {
-                            handlePreferenceChange(
-                              preference._id,
-                              checked === true
-                            );
-                          }}
-                        />
-                        <Label htmlFor={preference._id} className="font-normal">
-                          {preference.name}
-                        </Label>
-                      </div>
-                    ))}
-                  </div>
+                      {preferences.map((preference) => (
+                        <div
+                          key={preference._id}
+                          className="flex items-center space-x-2"
+                        >
+                          <Checkbox
+                            id={preference._id}
+                            onCheckedChange={(
+                              checked: boolean | "indeterminate"
+                            ) => {
+                              handlePreferenceChange(
+                                preference._id,
+                                checked === true
+                              );
+                            }}
+                          />
+                          <Label
+                            htmlFor={preference._id}
+                            className="font-normal"
+                          >
+                            {preference.name}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
                   ) : (
                     <p>Failed to fetch preferences</p>
                   )}
@@ -465,9 +493,13 @@ const AuthModal: React.FC<AuthModalProps> = ({
               </CardFooter>
             </form>
           )}
-          {/* {activeView === "otp" && (
-            
-          )} */}
+          {activeView === "otp" && email && (
+            <OtpForm
+              email={email}
+              onConfirm={() => setActiveView("sign-in")}
+              onClose={onClose}
+            />
+          )}
         </Card>
       </div>
     </div>

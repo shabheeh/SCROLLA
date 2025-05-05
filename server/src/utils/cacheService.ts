@@ -1,4 +1,4 @@
-import { redisClient } from "src/configs/redis";
+import { redisClient } from "../configs/redis";
 
 export const storeData = async (
   key: string,

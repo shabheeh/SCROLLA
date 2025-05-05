@@ -11,6 +11,9 @@ import {
 } from "../utils/jwt";
 import { ResponseMessage } from "../constants/responseMessages";
 import { CustomRequest } from "src/middlewares/authMiddleware";
+import { deleteData, retrieveData, storeData } from "../utils/cacheService";
+import { sendEmail } from "../utils/mailer";
+import { generateOTP } from "../helpers/otpGenerator";
 
 export const userSignup = async (
   req: Request,
@@ -35,12 +38,92 @@ export const userSignup = async (
 
   userData.password = hashedPassword;
 
-  await userModel.create(userData);
+  const otp = generateOTP();
 
+  userData.otp = otp;
+
+  await storeData(userData.email, JSON.stringify(userData), 600);
+
+  await sendEmail(
+    userData.email,
+    "Verify Your Email",
+    undefined,
+    `<h1>OTP Verification</h1>
+    <p>Your OTP is: <strong>${otp}</strong></p>
+     <p>This OTP will expire in 5 minutes.</p>`
+  );
+
+  res.status(HttpStatusCode.OK).json({
+    success: true,
+    message: ResponseMessage.SUCCESS.OPERATION_SUCCESSFUL,
+    email,
+  });
+};
+
+export const verfiyOtp = async (req: Request, res: Response): Promise<void> => {
+  const { email, otp } = req.body;
+  const userData = await retrieveData(email);
+
+  if (!userData) {
+    throw new CustomError(
+      "session timed out retry again",
+      HttpStatusCode.BAD_REQUEST
+    );
+  }
+
+  const parsedUserData = JSON.parse(userData);
+
+  const isOtpMatch = parsedUserData.otp === otp;
+
+  if (!isOtpMatch) {
+    throw new CustomError("Incorrect otp", HttpStatusCode.BAD_REQUEST);
+  }
+
+  await deleteData(email);
+
+  await userModel.create(parsedUserData);
   res.status(HttpStatusCode.CREATED).json({ success: true });
 };
 
-export const userSigin = async (req: Request, res: Response): Promise<void> => {
+export const resendOtp = async (req: Request, res: Response): Promise<void> => {
+  const { email } = req.body;
+
+  const userData = await retrieveData(email);
+
+  if (!userData) {
+    throw new CustomError(
+      "Session Timed out please try again",
+      HttpStatusCode.BAD_REQUEST
+    );
+  }
+
+  const parsedUserData = JSON.parse(userData);
+
+  const otp = generateOTP();
+
+  parsedUserData.otp = otp;
+
+  await storeData(parsedUserData.email, JSON.stringify(parsedUserData), 600);
+
+  await sendEmail(
+    parsedUserData.email,
+    "Verify Your Email",
+    undefined,
+    `<h1>OTP Verification</h1>
+    <p>Your OTP is: <strong>${otp}</strong></p>
+     <p>This OTP will expire in 5 minutes.</p>`
+  );
+
+  res.status(HttpStatusCode.OK).json({
+    success: true,
+    message: ResponseMessage.SUCCESS.OPERATION_SUCCESSFUL,
+  });
+};
+
+export const userSignin = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   const { email, password } = req.body;
 
   const user = await userModel.findOne({ email });

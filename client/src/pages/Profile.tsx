@@ -45,6 +45,7 @@ import { Button } from "../components/ui/button";
 import EditArticle from "../components/EditArticle";
 import DeleteArticleModal from "../components/DeleteArticleModal";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
+import { Avatar } from "../components/ui/avatar";
 
 const UserProfile = () => {
   const [activeTab, setActiveTab] = useState<"profile" | "articles" | "security" | "saved">("profile");
@@ -360,13 +361,13 @@ const UserProfile = () => {
                 <div className="mb-8 flex">
                   <div className="relative justify-center">
                     {profilePicturePreview ? (
-                      <div className="h-26 w-26 rounded-full bg-gray-100 flex items-center justify-center">
+                      <Avatar className="h-26 w-26 rounded-full bg-gray-100 flex items-center justify-center">
                         <img
                           className="h-full w-full rounded-full object-cover"
                           src={profilePicturePreview}
                           alt="User"
                         />
-                      </div>
+                      </Avatar>
                     ) : (
                       <div className="h-26 w-26 rounded-full bg-gray-100 flex items-center justify-center">
                         {user?.profilePicture ? (
@@ -376,10 +377,10 @@ const UserProfile = () => {
                             alt="User"
                           />
                         ) : (
-                          <div className="flex items-center justify-center h-full w-full bg-gray-200 text-gray-600 text-2xl">
+                          <Avatar className="flex items-center  justify-center h-full w-full bg-gray-200 text-gray-600 text-2xl">
                             {user?.firstName[0]}
                             {user?.lastName[0]}
-                          </div>
+                          </Avatar>
                         )}
                       </div>
                     )}

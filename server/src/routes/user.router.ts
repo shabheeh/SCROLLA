@@ -3,10 +3,12 @@ import {
   changePassword,
   getRefreshToken,
   getUser,
+  resendOtp,
   updateProfile,
-  userSigin,
+  userSignin,
   userSignout,
   userSignup,
+  verfiyOtp,
 } from "../controllers/user.controller";
 import {
   validateUserSignin,
@@ -32,7 +34,9 @@ import {
 const router = express.Router();
 
 router.post("/signup", validateUserSignup, asyncWrapper(userSignup));
-router.post("/signin", validateUserSignin, asyncWrapper(userSigin));
+router.post("/verify-otp", asyncWrapper(verfiyOtp));
+router.post("/resend-otp", asyncWrapper(resendOtp));
+router.post("/signin", validateUserSignin, asyncWrapper(userSignin));
 
 router.get("/preferences", asyncWrapper(getArticlePrefernces));
 router.post("/articles", authenticate, asyncWrapper(addArticle));
