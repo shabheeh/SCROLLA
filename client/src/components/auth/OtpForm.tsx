@@ -5,7 +5,6 @@ import {
   ChangeEvent,
   KeyboardEvent,
   ClipboardEvent,
-  FormEvent,
 } from "react";
 import { Button } from "../../components/ui/button";
 import {
@@ -28,7 +27,6 @@ type OtpFormProps = {
 
 export const OtpForm: React.FC<OtpFormProps> = ({
   email,
-  onClose,
   onConfirm,
 }) => {
   const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""]);

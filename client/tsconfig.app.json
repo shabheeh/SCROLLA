@@ -20,6 +20,9 @@
     "outDir": "./dist/app",
     "declaration": true,
 
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+
     /* Linting */
     "strict": true,
     "noUnusedLocals": true,
