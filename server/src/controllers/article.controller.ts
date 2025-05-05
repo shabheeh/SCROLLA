@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { PreferenceModel } from "../models/preference.model";
 import { HttpStatusCode } from "../constants/httpStatusCodes";
 import { ResponseMessage } from "../constants/responseMessages";
-import { CustomRequest } from "src/middlewares/authMiddleware";
+import { CustomRequest } from "../middlewares/authMiddleware";
 import { ArticleModel } from "../models/article.model";
 import CustomError from "../utils/error";
 import { userModel } from "../models/user.model";

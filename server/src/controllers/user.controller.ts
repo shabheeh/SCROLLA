@@ -10,7 +10,7 @@ import {
   verifyRefreshToken,
 } from "../utils/jwt";
 import { ResponseMessage } from "../constants/responseMessages";
-import { CustomRequest } from "src/middlewares/authMiddleware";
+import { CustomRequest } from "../middlewares/authMiddleware";
 import { deleteData, retrieveData, storeData } from "../utils/cacheService";
 import { sendEmail } from "../utils/mailer";
 import { generateOTP } from "../helpers/otpGenerator";
