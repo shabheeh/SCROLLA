@@ -22,6 +22,7 @@ import { useEffect, useRef, useState } from "react";
 import { IPreference } from "../types/preference.types";
 import { toast } from "sonner";
 import {
+  blockArticle,
   dislikeArticle,
   getArticlePrefernces,
   getArticles,
@@ -32,6 +33,12 @@ import { IArticle } from "../types/article.types";
 import { formatDate } from "../helpers/formateDate";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/authContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../components/ui/dropdown-menu";
 
 const ArticleFeed = () => {
   const [preferences, setPreferences] = useState<IPreference[]>([]);
@@ -111,24 +118,26 @@ const ArticleFeed = () => {
 
   const fetchArticles = async (): Promise<void> => {
     setLoading(true);
-    
+
     try {
       const result = await getArticles(
         debouncedSearch,
         selectedPreference,
         page
       );
-      
+
       if (page === 1) {
         setArticles(result.articles);
       } else {
         setArticles((prevArticles) => [...prevArticles, ...result.articles]);
       }
-      
+
       const hasMorePages = page < result.totalPages;
       setHasMore(hasMorePages);
-      
-      console.log(`Page ${page} of ${result.totalPages}, has more: ${hasMorePages}`);
+
+      console.log(
+        `Page ${page} of ${result.totalPages}, has more: ${hasMorePages}`
+      );
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Something went wrong"
@@ -188,6 +197,19 @@ const ArticleFeed = () => {
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Something went wrong"
+      );
+    }
+  };
+
+  const handleBlockArticle = async (articleId: string) => {
+    try {
+      await blockArticle(articleId);
+      setArticles((prev) =>
+        prev.filter((article) => article._id !== articleId)
+      );
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Someting went wrong"
       );
     }
   };
@@ -485,14 +507,29 @@ const ArticleFeed = () => {
                     <span>{article.dislikedBy?.length || 0}</span>
                   </Button>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="rounded-full cursor-pointer"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <EllipsisVertical className="h-4 w-4" />
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="rounded-full cursor-pointer"
+                    >
+                      <EllipsisVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="bg-white">
+                    <DropdownMenuItem
+                      className="cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleBlockArticle(article._id)
+                      }
+                      }
+                    >
+                      Not interested
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
 
               {index < articles.length - 1 && (

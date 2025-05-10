@@ -19,8 +19,8 @@
 
 
     "composite": true,
-    "outDir": "./dist/node",
-    "declaration": true,
+    "outDir": "./dist",
+    // "declaration": true,
 
     /* Linting */
     "strict": true,

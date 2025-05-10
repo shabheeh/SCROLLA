@@ -44,8 +44,7 @@ export const addArticle = async (
 export const getArticles = async (
   searchValue: string,
   preference: string,
-  page: number,
-
+  page: number
 ): Promise<{
   articles: IArticle[];
   currentPage: number;
@@ -173,6 +172,21 @@ export const editArticle = async (
 export const deleteArticle = async (articleId: string): Promise<void> => {
   try {
     await api.delete(`/articles/${articleId}`);
+  } catch (error) {
+    console.log(error);
+
+    if (error instanceof Error) {
+      throw new Error(error.message);
+    } else {
+      console.log(error);
+      throw new Error("An error occured");
+    }
+  }
+};
+
+export const blockArticle = async (articleId: string): Promise<void> => {
+  try {
+    await api.patch(`/articles/${articleId}/block`);
   } catch (error) {
     console.log(error);
 

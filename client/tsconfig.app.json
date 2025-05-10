@@ -17,8 +17,8 @@
     "jsx": "react-jsx",
 
     "composite": true,
-    "outDir": "./dist/app",
-    "declaration": true,
+    "outDir": "./dist",
+    // "declaration": true,
 
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,

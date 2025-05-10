@@ -18,6 +18,7 @@ import asyncWrapper from "../utils/asyncWrapper";
 import { authenticate } from "../middlewares/authMiddleware";
 import {
   addArticle,
+  blockArticle,
   deleteArticle,
   dislikeArticle,
   editArticle,
@@ -52,6 +53,11 @@ router.patch(
   "/articles/:articleId/dislike",
   authenticate,
   asyncWrapper(dislikeArticle)
+);
+router.patch(
+  "/articles/:articleId/block",
+  authenticate,
+  asyncWrapper(blockArticle)
 );
 router.put(
   "/articles/:articleId",

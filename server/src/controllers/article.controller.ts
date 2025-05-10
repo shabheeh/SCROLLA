@@ -73,9 +73,11 @@ export const getArticles = async (
       | { topics: { $elemMatch: { $regex: RegExp } } }
     >;
     categories?: { $in: Types.ObjectId[] };
+    blockedBy: { $nin: Types.ObjectId[] };
   } = {
     visibility: "public",
     isPublished: true,
+    blockedBy: { $nin: [new Types.ObjectId(userId)] },
   };
 
   if (searchQuery) {
@@ -365,5 +367,28 @@ export const deleteArticle = async (
   res.status(HttpStatusCode.OK).json({
     success: true,
     message: ResponseMessage.SUCCESS.RESOURCE_DELETED,
+  });
+};
+
+export const blockArticle = async (
+  req: CustomRequest,
+  res: Response
+): Promise<void> => {
+  const userId = req.userId;
+  const { articleId } = req.params;
+
+  const article = await ArticleModel.findById(articleId);
+
+  if (!article) {
+    throw new CustomError("Article not found", HttpStatusCode.NOT_FOUND);
+  }
+
+  await ArticleModel.findByIdAndUpdate(articleId, {
+    $addToSet: { blockedBy: userId },
+  });
+
+  res.status(HttpStatusCode.OK).json({
+    success: true,
+    messagge: ResponseMessage.SUCCESS.OPERATION_SUCCESSFUL,
   });
 };
